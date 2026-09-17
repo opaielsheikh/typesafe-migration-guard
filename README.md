@@ -15,6 +15,20 @@
 
 ---
 
+## 📺 Video Walkthrough & Demo
+
+Watch the demonstration of **Typesafe Migration Guard** intercepting database migrations and blocking destructive operations in real time:
+
+<div align="center">
+  <a href="https://www.youtube.com/watch?v=4cI4r2Np7J4">
+    <img src="https://img.youtube.com/vi/4cI4r2Np7J4/maxresdefault.jpg" alt="Typesafe Migration Guard Walkthrough Video" width="100%" style="border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.4);" />
+  </a>
+  <br />
+  <sub>▶️ <em>Click the preview above to watch the walkthrough on YouTube</em></sub>
+</div>
+
+---
+
 ## The Problem: Why Traditional Tooling Fails in Production
 
 1. **Static Regex / AST Linters**: Prone to false negatives and brittle syntax edge cases. A subtle nested statement, transaction block, or multi-statement migration can easily bypass naive regex pattern matchers.
