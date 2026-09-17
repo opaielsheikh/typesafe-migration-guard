@@ -1,3 +1,5 @@
+
+
 # Typesafe Migration Guard 🛡️
 
 [![CI Pipeline](https://img.shields.io/badge/CI-GitHub%20Actions-2088FF.svg)](.github/workflows/migration-guard-ci.yml)
