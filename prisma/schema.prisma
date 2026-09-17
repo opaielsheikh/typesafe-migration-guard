@@ -1,0 +1,45 @@
+// Prisma Schema configured for Supabase PostgreSQL
+// Supabase uses connection pooling (Supavisor / PgBouncer) for application queries
+// and direct connections for DDL schema migrations.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  role      String   @default("user")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  auditLogs MigrationAuditLog[]
+
+  @@map("users")
+}
+
+model MigrationAuditLog {
+  id           String   @id @default(uuid())
+  migrationName String
+  environment  String
+  verdict      String   // "SAFE" | "DANGER"
+  latencyMs    Float
+  confidence   Float
+  blocked      Boolean  @default(false)
+  sqlSnippet   String   @db.Text
+  triggeredBy  String?
+  createdAt    DateTime @default(now())
+
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId String?
+
+  @@index([environment, verdict])
+  @@map("migration_audit_logs")
+}

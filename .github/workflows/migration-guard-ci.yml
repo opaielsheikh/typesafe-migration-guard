@@ -1,0 +1,73 @@
+name: Production Migration Guard & Deployment Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  migration-safety-gate:
+    name: Intercept & Verify Database Migrations
+    runs-on: ubuntu-latest
+    env:
+      TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+      NODE_ENV: production
+      ENVIRONMENT: production
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Application & Generate Prisma Artifacts
+        run: |
+          npm run prisma:generate
+          npm run build
+
+      - name: Start Next.js Guardian Server in Background
+        run: |
+          npm run start &
+          echo "Waiting for Guardian API to become healthy..."
+          npx wait-on http://localhost:3000/api/migration-guard --timeout 30000
+
+      - name: Intercept Migrations with TypeSafe Jev Model
+        id: guard_check
+        run: |
+          echo "Executing TypeSafe Migration Guard against production migrations..."
+          npm run guard:check
+
+      - name: Upload Migration Guard Telemetry
+        if: always()
+        run: |
+          echo "Guardian execution completed."
+
+  deploy-production:
+    name: Deploy to Production EC2 via PM2
+    needs: migration-safety-gate
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && success()
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Execute Zero-Downtime EC2 Deployment
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          echo "Migration safety gate passed. Executing AWS EC2 PM2 deployment..."
+          chmod +x ./scripts/deploy-ec2.sh
+          ./scripts/deploy-ec2.sh --simulate
